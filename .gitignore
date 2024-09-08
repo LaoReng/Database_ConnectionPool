@@ -1,5 +1,6 @@
 # 编译&二进制文件夹
 build/
+bin/
 
 # Prerequisites
 *.d

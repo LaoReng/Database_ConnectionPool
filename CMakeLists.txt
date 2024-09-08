@@ -4,9 +4,9 @@ PROJECT(ConnectionPool)
 # 系统类型检测
 IF(UNIX AND NOT APPLE)
     EXECUTE_PROCESS(
-        COMMAND lsb_release -is 
-        OUTPUT_VARIABLE 
-        SYSTEM_TYPE 
+        COMMAND lsb_release -is
+        OUTPUT_VARIABLE
+        SYSTEM_TYPE
         OUTPUT_STRIP_TRAILING_WHITESPACE
     )
     # MESSAGE(STATUS "SYSTEM_TYPE: ${SYSTEM_TYPE}")
@@ -18,14 +18,14 @@ ENDIF()
 
 # 查找MySQL开发环境头文件所在位置
 FIND_PATH(
-    MYSQL_INCLUDE_DIR 
-    NAMES mysql.h 
+    MYSQL_INCLUDE_DIR
+    NAMES mysql.h
     PATHS /usr/include /usr/include/mysql /usr/local/include /usr/local/include/mysql /opt/local/include /opt/local/include/mysql
 )
 # 查找MySQL开发环境库文件所在位置
 FIND_LIBRARY(
-    MYSQL_LIBRARIES 
-    NAMES mysqlclient 
+    MYSQL_LIBRARIES
+    NAMES mysqlclient
     PATHS /usr/lib /usr/lib/mysql /usr/local/lib /usr/local/lib/mysql /opt/local/lib /opt/local/lib/mysql
 )
 
@@ -44,3 +44,27 @@ ELSE()
         MESSAGE(STATUS "非Ubuntu发行版 SYSTEM_TYPE: ${SYSTEM_TYPE}")
     ENDIF()
 ENDIF()
+
+# 指定c++版本
+SET(CMAKE_CXX_STANDARD 11)
+# 指定生成的可执行程序的名字
+SET(EXE_NAME dbConnPool.out)
+
+# 指定头文件位置
+INCLUDE_DIRECTORIES(
+    src/ConnectionPool
+    src/DBDispatcher
+    src/jsoncpp
+    src/MySQL
+)
+
+FILE(GLOB_RECURSE SRC src/*.cpp src/*.c)
+
+# 生成可执行程序
+ADD_EXECUTABLE(${EXE_NAME} ${SRC})
+
+# 指定引用的动态库文件
+TARGET_LINK_LIBRARIES(
+    ${EXE_NAME}
+    mysqlclient
+)

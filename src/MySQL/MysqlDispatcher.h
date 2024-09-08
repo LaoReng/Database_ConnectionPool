@@ -28,4 +28,10 @@ public:
     bool rollback();
 
 private:
+    void freeResult();
+
+private:
+    MYSQL *m_conn = nullptr;
+    MYSQL_RES *m_result = nullptr;
+    MYSQL_ROW m_row = nullptr;
 };
