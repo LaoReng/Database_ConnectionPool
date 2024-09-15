@@ -9,15 +9,25 @@ class ConnectionPool
 {
 public:
     /// @brief 返回数据库连接池的全局唯一对象指针
-    /// @return 
+    /// @return
     static ConnectionPool *getConnectPool();
     ConnectionPool(const ConnectionPool &con) = delete;
     ConnectionPool &operator=(const ConnectionPool &con) = delete;
-
+    /// @brief 获取连接池中的一个连接
+    /// @return 返回一个可用的数据库连接
+    std::shared_ptr<MysqlDispatcher> getConnection();
+    ~ConnectionPool();
 private:
     ConnectionPool();
     /// @brief 解析json格式文件
     bool parseJsonFile();
+    // 线程函数
+    /// @brief 生产连接池里面的连接
+    void produceConnection();
+    /// @brief 检测有没有需要销毁的连接
+    void recycleConnection();
+    /// @brief 创建数据库连接
+    void addConnection();
 
 private:
     std::string m_ip;

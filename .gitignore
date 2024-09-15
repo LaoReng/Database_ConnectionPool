@@ -2,6 +2,9 @@
 build/
 bin/
 
+# 项目属性配置文件
+.vscode/
+
 # Prerequisites
 *.d
 

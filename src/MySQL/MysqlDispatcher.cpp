@@ -1,6 +1,5 @@
 #include "MysqlDispatcher.h"
 
-
 MysqlDispatcher::MysqlDispatcher()
 {
     m_conn = mysql_init(nullptr);
@@ -20,6 +19,7 @@ MysqlDispatcher::~MysqlDispatcher()
 bool MysqlDispatcher::connect(std::string user, std::string passwd, std::string dbName, std::string ip, unsigned short port)
 {
     MYSQL *ptr = mysql_real_connect(m_conn, ip.c_str(), user.c_str(), passwd.c_str(), dbName.c_str(), port, nullptr, 0);
+    refreshAliveTime();
     return ptr != nullptr;
 }
 
@@ -47,8 +47,9 @@ bool MysqlDispatcher::next()
 {
     if (m_result != nullptr)
     {
-        m_row = mysql_fetch_row(m_result);
-        return true;
+        // printf("error:执行到这里\n");
+        if (m_row = mysql_fetch_row(m_result))
+            return true;
     }
     return false;
 }
@@ -78,6 +79,18 @@ bool MysqlDispatcher::commit()
 bool MysqlDispatcher::rollback()
 {
     return mysql_rollback(m_conn);
+}
+
+void MysqlDispatcher::refreshAliveTime()
+{
+    m_alivetime = std::chrono::steady_clock::now();
+}
+
+long long MysqlDispatcher::getAliveTime()
+{
+    std::chrono::nanoseconds res = std::chrono::steady_clock::now() - m_alivetime;
+    std::chrono::milliseconds millsec = std::chrono::duration_cast<std::chrono::milliseconds>(res);
+    return millsec.count();
 }
 
 void MysqlDispatcher::freeResult()
