@@ -3,6 +3,7 @@
 #include <mutex>
 #include <condition_variable>
 #include <MysqlDispatcher.h>
+#include <atomic>
 
 /// @brief 数据库连接池类（单例模式）
 class ConnectionPool
@@ -42,4 +43,6 @@ private:
     std::queue<MysqlDispatcher *> m_connectionQ;
     std::mutex m_mutexQ;            // 互斥锁
     std::condition_variable m_cond; // 条件变量
+    // 在Linux下使用detach将线程分离，但是这样并不会时主线程能够正常结束
+    std::atomic<bool> isRun;  // 程序是否在运行（原子变量）
 };

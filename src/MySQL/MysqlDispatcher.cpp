@@ -23,7 +23,7 @@ bool MysqlDispatcher::connect(std::string user, std::string passwd, std::string 
     return ptr != nullptr;
 }
 
-bool MysqlDispatcher::update(std::string sql)
+bool MysqlDispatcher::update(const std::string &sql)
 {
     if (mysql_query(m_conn, sql.c_str()))
     {

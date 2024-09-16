@@ -42,6 +42,12 @@ ConnectionPool::~ConnectionPool()
         m_connectionQ.pop();
         delete conn;
     }
+    // 看看析构函数有没有调用
+    printf("%s(%d):调用了连接池的析构函数\n", __FILE__, __LINE__);
+
+    // 将isRun置为false，并利用条件遍历将阻塞的线程唤醒
+    isRun = false;
+    m_cond.notify_all(); // 唤醒所有线程
 }
 
 ConnectionPool::ConnectionPool()
@@ -49,12 +55,14 @@ ConnectionPool::ConnectionPool()
     // 加载配置文件
     if (!parseJsonFile())
     {
+        printf("%s(%d):配置文件加载失败\n", __FILE__, __LINE__);
         return;
     }
     for (int i = 0; i < m_minSize; ++i)
     {
         addConnection();
     }
+    isRun = true;
     // 生产连接池里面的连接
     std::thread producer(&ConnectionPool::produceConnection, this);
     // 检测有没有需要销毁的连接
@@ -74,7 +82,7 @@ ConnectionPool *ConnectionPool::getConnectPool()
 
 bool ConnectionPool::parseJsonFile()
 {
-    std::ifstream ifs("config/dbconf.json");
+    std::ifstream ifs("/root/projects/Database_ConnectionPool/src/config/dbconf.json");
     Json::Reader rd;
     Json::Value root;
     rd.parse(ifs, root);
@@ -97,21 +105,24 @@ bool ConnectionPool::parseJsonFile()
 
 void ConnectionPool::produceConnection()
 {
-    while (true)
+    while (isRun)
     {
         std::unique_lock<std::mutex> locker(m_mutexQ);
-        while (m_connectionQ.size() >= m_minSize)
+        while (isRun && m_connectionQ.size() >= m_minSize)
         {
             m_cond.wait(locker);
         }
+        if (!isRun)
+            break;
         addConnection();
         m_cond.notify_all(); // 唤醒消费者
     }
+    printf("%s(%d):生产连接线程结束运行\n", __FILE__, __LINE__);
 }
 
 void ConnectionPool::recycleConnection()
 {
-    while (true)
+    while (isRun)
     {
         {
             std::lock_guard<std::mutex> locker(m_mutexQ);
@@ -132,6 +143,7 @@ void ConnectionPool::recycleConnection()
         }
         std::this_thread::sleep_for(std::chrono::seconds(1));
     }
+    printf("%s(%d):销毁连接线程结束运行\n", __FILE__, __LINE__);
 }
 
 void ConnectionPool::addConnection()
@@ -143,6 +155,7 @@ void ConnectionPool::addConnection()
     else
     {
         // TODO: 可以输出错误信息之类的
+        printf("%s(%d):数据库连接创建失败\n", __FILE__, __LINE__);
         delete conn;
     }
 }

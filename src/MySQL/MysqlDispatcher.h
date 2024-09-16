@@ -2,7 +2,7 @@
 #include <iostream>
 #include <string>
 #include <mysql/mysql.h>
-#include <chrono>  // 时钟对应头文件
+#include <chrono> // 时钟对应头文件
 
 class MysqlDispatcher
 {
@@ -14,7 +14,7 @@ public:
     // 连接数据库
     bool connect(std::string user, std::string passwd, std::string dbName, std::string ip, unsigned short port = 3306);
     // 更新数据库：insert,update,delete
-    bool update(std::string sql);
+    bool update(const std::string &sql);
     // 查询数据库
     bool query(std::string sql);
     // 遍历查询得到的结果集
@@ -34,6 +34,7 @@ public:
     void refreshAliveTime();
     //  计算连接存活的总时长
     long long getAliveTime();
+
 private:
     void freeResult();
 
@@ -41,5 +42,5 @@ private:
     MYSQL *m_conn = nullptr;
     MYSQL_RES *m_result = nullptr;
     MYSQL_ROW m_row = nullptr;
-    std::chrono::steady_clock::time_point m_alivetime;  // steady_clock：绝对时钟类 连接存活时间
+    std::chrono::steady_clock::time_point m_alivetime; // steady_clock：绝对时钟类 连接存活时间
 };
