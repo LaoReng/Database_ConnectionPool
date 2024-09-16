@@ -6,25 +6,30 @@
 
 int query()
 {
-    MysqlDispatcher conn;
-    conn.connect("root", "123", "CrossTime", "192.168.10.132");
+
+    dbDispatcher *conn = new MysqlDispatcher;
+
+    // MysqlDispatcher conn;
+    conn->connect("root", "123", "CrossTime", "192.168.10.132", 3306);
     std::string sql = "insert into vip VALUES(3,0,0,0,\'2024-04-22 19:35:16\',0,0,0);";
-    bool ret = conn.update(sql);
+    bool ret = conn->update(sql);
     std::cout << "ret =  " << ret << std::endl;
 
     sql = "select * from vip;";
-    conn.query(sql);
-    while (conn.next())
+    conn->query(sql);
+    printf("结果集共有%d条（%d列）\n", conn->getResNumRows(), conn->getResNumFields());
+    while (conn->next())
     {
-        std::cout << conn.value(0) << ","
-                  << conn.value(1) << ","
-                  << conn.value(2) << ","
-                  << conn.value(3) << ","
-                  << conn.value(4) << ","
-                  << conn.value(5) << ","
-                  << conn.value(6) << ","
-                  << conn.value(7) << std::endl;
+        std::cout << conn->value(0) << ","
+                  << conn->value(1) << ","
+                  << conn->value(2) << ","
+                  << conn->value(3) << ","
+                  << conn->value(4) << ","
+                  << conn->value(5) << ","
+                  << conn->value(6) << ","
+                  << conn->value(7) << std::endl;
     }
+    delete conn;
     return 0;
 }
 
@@ -49,7 +54,7 @@ void op2(ConnectionPool *pool, int begin, int end)
 {
     for (int i = begin; i < end; ++i)
     {
-        std::shared_ptr<MysqlDispatcher> conn = pool->getConnection();
+        std::shared_ptr<dbDispatcher> conn = pool->getConnection();
         char sql[512] = "";
         sprintf(sql, "insert into manager VALUES(%d,'admin','15046543174','admin',\'2024-04-22 19:35:16\');", i + 3);
         bool ret = conn->update(sql);
@@ -116,7 +121,8 @@ void test2()
 
 int main()
 {
+    // query();
     test1();
-    printf("%s(%d):主线程结束运行\n", __FILE__, __LINE__);
+    // printf("%s(%d):主线程结束运行\n", __FILE__, __LINE__);
     return 0;
 }

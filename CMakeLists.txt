@@ -58,6 +58,7 @@ INCLUDE_DIRECTORIES(
     src/MySQL
 )
 
+# 递归检索指定目录下的文件，可以指定多个检索条件
 FILE(GLOB_RECURSE SRC src/*.cpp src/*.c)
 
 # 生成可执行程序

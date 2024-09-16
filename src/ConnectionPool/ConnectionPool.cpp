@@ -3,9 +3,10 @@
 #include <fstream>
 #include <thread>
 
-std::shared_ptr<MysqlDispatcher> ConnectionPool::getConnection()
+std::shared_ptr<dbDispatcher> ConnectionPool::getConnection()
 {
     std::unique_lock<std::mutex> locker(m_mutexQ);
+    // 判断连接池中的连接数量是否为空
     while (m_connectionQ.empty())
     {
         if (std::cv_status::timeout == m_cond.wait_for(locker, std::chrono::milliseconds(m_timeout)))
@@ -19,16 +20,16 @@ std::shared_ptr<MysqlDispatcher> ConnectionPool::getConnection()
         }
     }
 
-    std::shared_ptr<MysqlDispatcher> connPtr(m_connectionQ.front(),
-                                             [this](MysqlDispatcher *conn)
-                                             {
-                                                 {
-                                                     std::lock_guard<std::mutex> locker(m_mutexQ); // 和unique_lock的用法类似
-                                                     // std::unique_lock<std::mutex> locker(m_mutexQ);
-                                                     conn->refreshAliveTime();
-                                                     m_connectionQ.push(conn);
-                                                 }
-                                             }); // 共享指针可以指定删除器（对象销毁）的动作
+    std::shared_ptr<dbDispatcher> connPtr(m_connectionQ.front(),
+                                          [this](dbDispatcher *conn)
+                                          {
+                                              {
+                                                  std::lock_guard<std::mutex> locker(m_mutexQ); // 和unique_lock的用法类似
+                                                  // std::unique_lock<std::mutex> locker(m_mutexQ);
+                                                  conn->refreshAliveTime();
+                                                  m_connectionQ.push(conn);
+                                              }
+                                          }); // 共享指针可以指定删除器（对象销毁）的动作
     m_connectionQ.pop();
     m_cond.notify_all(); // 唤醒生产者
     return connPtr;
@@ -36,14 +37,16 @@ std::shared_ptr<MysqlDispatcher> ConnectionPool::getConnection()
 
 ConnectionPool::~ConnectionPool()
 {
-    while (m_connectionQ.empty())
+    // 看看析构函数有没有调用
+    printf("%s(%d):调用了连接池的析构函数\n", __FILE__, __LINE__);
+    printf("%s(%d):当前连接池的连接数量为%d empty:%d\n", __FILE__, __LINE__, m_connectionQ.size(), m_connectionQ.empty()); // empty()函数返回false表示不为空 true表示为空
+    while (!m_connectionQ.empty())
     {
-        MysqlDispatcher *conn = m_connectionQ.front();
+        dbDispatcher *conn = m_connectionQ.front();
         m_connectionQ.pop();
         delete conn;
     }
-    // 看看析构函数有没有调用
-    printf("%s(%d):调用了连接池的析构函数\n", __FILE__, __LINE__);
+    printf("%s(%d):当前连接池的连接数量为%d empty:%d\n", __FILE__, __LINE__, m_connectionQ.size(), m_connectionQ.empty());
 
     // 将isRun置为false，并利用条件遍历将阻塞的线程唤醒
     isRun = false;
@@ -129,7 +132,7 @@ void ConnectionPool::recycleConnection()
             while (m_connectionQ.size() > m_minSize)
             {
                 // 取出对头的元素
-                MysqlDispatcher *conn = m_connectionQ.front();
+                dbDispatcher *conn = m_connectionQ.front();
                 if (conn->getAliveTime() >= m_maxIdleTime)
                 {
                     m_connectionQ.pop();
@@ -149,7 +152,7 @@ void ConnectionPool::recycleConnection()
 void ConnectionPool::addConnection()
 {
     // TODO: 这里的处理有问题，有没有可能这个连接创建失败了
-    MysqlDispatcher *conn = new MysqlDispatcher;
+    dbDispatcher *conn = new MysqlDispatcher;
     if (conn->connect(m_user, m_passwd, m_dbName, m_ip, m_port))
         m_connectionQ.push(conn);
     else

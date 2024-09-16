@@ -8,6 +8,8 @@ MysqlDispatcher::MysqlDispatcher()
 
 MysqlDispatcher::~MysqlDispatcher()
 {
+    // printf("%s(%d)<%s>:析构函数被调用\n", __FILE__, __LINE__, __FUNCTION__);
+
     freeResult();
     if (m_conn != nullptr)
     {
@@ -16,7 +18,7 @@ MysqlDispatcher::~MysqlDispatcher()
     }
 }
 
-bool MysqlDispatcher::connect(std::string user, std::string passwd, std::string dbName, std::string ip, unsigned short port)
+bool MysqlDispatcher::connect(const std::string &user, const std::string &passwd, const std::string &dbName, const std::string &ip, unsigned short port)
 {
     MYSQL *ptr = mysql_real_connect(m_conn, ip.c_str(), user.c_str(), passwd.c_str(), dbName.c_str(), port, nullptr, 0);
     refreshAliveTime();
@@ -32,7 +34,7 @@ bool MysqlDispatcher::update(const std::string &sql)
     return true;
 }
 
-bool MysqlDispatcher::query(std::string sql)
+bool MysqlDispatcher::query(const std::string &sql)
 {
     freeResult();
     if (mysql_query(m_conn, sql.c_str()))
@@ -52,6 +54,20 @@ bool MysqlDispatcher::next()
             return true;
     }
     return false;
+}
+
+unsigned int MysqlDispatcher::getResNumFields()
+{
+    if (m_result == nullptr)
+        return 0;
+    return mysql_num_fields(m_result);
+}
+
+unsigned int MysqlDispatcher::getResNumRows()
+{
+    if (m_result == nullptr)
+        return 0;
+    return mysql_num_rows(m_result);
 }
 
 std::string MysqlDispatcher::value(int index)
@@ -79,18 +95,6 @@ bool MysqlDispatcher::commit()
 bool MysqlDispatcher::rollback()
 {
     return mysql_rollback(m_conn);
-}
-
-void MysqlDispatcher::refreshAliveTime()
-{
-    m_alivetime = std::chrono::steady_clock::now();
-}
-
-long long MysqlDispatcher::getAliveTime()
-{
-    std::chrono::nanoseconds res = std::chrono::steady_clock::now() - m_alivetime;
-    std::chrono::milliseconds millsec = std::chrono::duration_cast<std::chrono::milliseconds>(res);
-    return millsec.count();
 }
 
 void MysqlDispatcher::freeResult()
